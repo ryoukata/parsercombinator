@@ -23,10 +23,32 @@ abstract class Combinator {
    */
   def s(literal: String): Parser[String] = string(literal)
 
+  def oneOf(chars: Seq[Char]): Parser[String] = input => {
+    if (input.length != 0 && chars.contains(input.head)) {
+      Success(input.head.toString, input.tail)
+    } else {
+      Failure
+    }
+  }
+
   def select[T, U >: T](left: => Parser[T], right: => Parser[U]): Parser[U] = input => {
     left(input) match {
       case success@Success(_, _) => success
       case Failure => right(input)
+    }
+  }
+
+  def combine[T, U](left: Parser[T], right: Parser[U]): Parser[(T, U)] = input => {
+    left(input) match {
+      case Success(value1, next1) =>
+        right(next1) match {
+          case Success(value2, next2) =>
+            Success((value1, value2), next2)
+          case Failure =>
+            Failure
+        }
+      case Failure =>
+        Failure
     }
   }
 
